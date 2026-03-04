@@ -23,10 +23,19 @@ class UpdateBookRequest extends FormRequest
     {
         return [
             'title' => ['sometimes', 'string', 'max:255'],
-            'author' => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'string', 'max:1000'],
             'ISBN' => ['sometimes', 'string', 'unique:books,ISBN,' . $this->book->id],
-            'published_year' => ['sometimes', 'integer', 'min:1000', 'max:' . date('Y')],
+            'total_copies' => ['sometimes', 'integer', 'min:1'],
+            'available_copies' => ['sometimes', 'integer', 'min:0'],
             'is_available' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'ISBN.unique' => 'Este ISBN ya está en uso por otro libro',
+            'total_copies.min' => 'Debe haber al menos 1 copia',
         ];
     }
 }
