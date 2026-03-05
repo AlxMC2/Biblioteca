@@ -26,10 +26,12 @@ class BookPolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function create(User $user)
     {
         return $user->hasRole('bibliotecario');
     }
+
+
 
     /**
      * Determine whether the user can update the model.
