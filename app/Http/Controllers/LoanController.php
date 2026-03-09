@@ -13,13 +13,16 @@ class LoanController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Loan::class);
 
-        $loans = Loan::with('book')->paginate();
+        $loans = Loan::with('book')
+            ->where('requester_name', $request->user()->name)
+            ->orderByDesc('created_at')
+            ->paginate();
 
-        return response()->json(LoanResource::collection($loans));
+        return LoanResource::collection($loans);
     }
 
     /**

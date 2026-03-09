@@ -118,4 +118,105 @@ class LoanTest extends TestCase
         ]);
         $this->assertNotNull(Loan::find($loan->id)->return_at);
     }
+
+    public function test_no_se_puede_marcar_como_devuelto_un_prestamo_ya_devuelto()
+    {
+        // Preparacion
+        $estudiante = User::factory()->create();
+        $estudiante->assignRole('estudiante');
+        $book = Book::factory()->create([
+            'available_copies' => 2,
+            'is_available'     => true,
+        ]);
+        $loan = Loan::factory()->returned()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $estudiante->name,
+        ]);
+
+        // Ejecucion
+        $response = $this->actingAs($estudiante, 'sanctum')
+            ->postJson("/api/v1/loans/{$loan->id}/return");
+
+        // Verificacion
+        $response->assertStatus(422);
+        $response->assertJson(['message' => 'Loan already returned']);
+        $this->assertDatabaseHas('books', [
+            'id'               => $book->id,
+            'available_copies' => 2,
+        ]);
+    }
+
+    public function test_un_usuario_no_puede_devolver_el_prestamo_de_otro_usuario()
+    {
+        // Preparacion
+        $duenoPrestamo = User::factory()->create();
+        $duenoPrestamo->assignRole('estudiante');
+
+        $usuarioDistinto = User::factory()->create();
+        $usuarioDistinto->assignRole('estudiante');
+
+        $book = Book::factory()->create([
+            'available_copies' => 1,
+            'is_available'     => true,
+        ]);
+
+        $loan = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $duenoPrestamo->name,
+            'return_at'      => null,
+        ]);
+
+        // Ejecucion
+        $response = $this->actingAs($usuarioDistinto, 'sanctum')
+            ->postJson("/api/v1/loans/{$loan->id}/return");
+
+        // Verificacion
+        $response->assertStatus(403);
+        $this->assertNull($loan->fresh()->return_at);
+        $this->assertDatabaseHas('books', [
+            'id'               => $book->id,
+            'available_copies' => 1,
+        ]);
+    }
+
+    public function test_el_usuario_ve_propios_prestamos()
+    {
+        // Preparacion
+        $usuario = User::factory()->create();
+        $usuario->assignRole('estudiante');
+
+        $otroUsuario = User::factory()->create();
+        $otroUsuario->assignRole('estudiante');
+
+        $book = Book::factory()->create();
+
+        $prestamoAntiguo = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $usuario->name,
+            'created_at'     => now()->subDays(3),
+        ]);
+
+        $prestamoReciente = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $usuario->name,
+            'created_at'     => now()->subDay(),
+        ]);
+
+        $prestamoAjeno = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $otroUsuario->name,
+            'created_at'     => now(),
+        ]);
+
+        // Ejecucion
+        $response = $this->actingAs($usuario, 'sanctum')
+            ->getJson('/api/v1/loans');
+
+        // Verificacion
+        $response->assertStatus(200);
+        $response->assertJsonCount(2, 'data');
+        $response->assertJsonPath('data.0.id', $prestamoReciente->id);
+        $response->assertJsonPath('data.1.id', $prestamoAntiguo->id);
+        $response->assertJsonMissing(['id' => $prestamoAjeno->id]);
+    }
 }

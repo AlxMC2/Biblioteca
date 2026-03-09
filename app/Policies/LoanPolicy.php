@@ -29,6 +29,7 @@ class LoanPolicy
      */
     public function update(User $user, Loan $loan): bool
     {
-        return $user->hasRole(['docente', 'estudiante']);
+        return $user->hasRole(['docente', 'estudiante'])
+            && $loan->requester_name === $user->name;
     }
 }
