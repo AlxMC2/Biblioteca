@@ -219,4 +219,54 @@ class LoanTest extends TestCase
         $response->assertJsonPath('data.1.id', $prestamoAntiguo->id);
         $response->assertJsonMissing(['id' => $prestamoAjeno->id]);
     }
+
+    public function test_historial_vacio()
+    {
+        // Preparacion
+        $usuario = User::factory()->create();
+        $usuario->assignRole('estudiante');
+
+        // Ejecucion
+        $response = $this->actingAs($usuario, 'sanctum')
+            ->getJson('/api/v1/loans');
+
+        // Verificacion
+        $response->assertStatus(200);
+        $response->assertJson([
+            'message' => 'No hay ningun préstamo registrado',
+            'data' => [],
+        ]);
+    }
+
+    public function test_no_ver_prestamos_ajenos()
+    {
+        // Preparacion
+        $usuario = User::factory()->create();
+        $usuario->assignRole('estudiante');
+
+        $otroUsuario = User::factory()->create();
+        $otroUsuario->assignRole('estudiante');
+
+        $book = Book::factory()->create();
+
+        $prestamoPropio = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $usuario->name,
+        ]);
+
+        $prestamoAjeno = Loan::factory()->create([
+            'book_id'        => $book->id,
+            'requester_name' => $otroUsuario->name,
+        ]);
+
+        // Ejecucion
+        $response = $this->actingAs($usuario, 'sanctum')
+            ->getJson('/api/v1/loans');
+
+        // Verificacion
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.id', $prestamoPropio->id);
+        $response->assertJsonMissing(['id' => $prestamoAjeno->id]);
+    }
 }

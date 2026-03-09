@@ -22,6 +22,13 @@ class LoanController extends Controller
             ->orderByDesc('created_at')
             ->paginate();
 
+        if ($loans->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay ningun préstamo registrado',
+                'data' => [],
+            ]);
+        }
+
         return LoanResource::collection($loans);
     }
 
