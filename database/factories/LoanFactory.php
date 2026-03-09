@@ -17,7 +17,16 @@ class LoanFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'requester_name' => $this->faker->name(),
+            'book_id'        => \App\Models\Book::factory(),
+            'return_at'      => null,
         ];
+    }
+
+    public function returned(): static
+    {
+        return $this->state(fn () => [
+            'return_at' => now(),
+        ]);
     }
 }

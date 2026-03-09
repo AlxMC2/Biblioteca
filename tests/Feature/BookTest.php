@@ -2,58 +2,79 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class BookTest extends TestCase
 {
-    use RefreshDatabase; // Esto limpia la base de datos después de cada test
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Creamos los roles necesarios para los tests
         Role::create(['name' => 'bibliotecario']);
         Role::create(['name' => 'estudiante']);
     }
 
-    /** @test */
-    public function un_bibliotecario_puede_crear_un_libro()
+    public function test_un_bibliotecario_puede_crear_un_libro()
     {
-        // 1. Creamos el usuario y le asignamos el rol
-        $admin = User::factory()->create();
-        $admin->assignRole('bibliotecario');
+        // Preparacion
+        $bibliotecario = User::factory()->create();
+        $bibliotecario->assignRole('bibliotecario');
 
-        // 2. Hacemos la petición como ese usuario
-        $response = $this->actingAs($admin, 'sanctum')
-                         ->postJson('/api/v1/books', [
-                             'title' => 'Cien años de soledad',
-                             'author' => 'Gabriel García Márquez',
-                             'ISBN' => '1234567890'
-                         ]);
+        // Ejecucion
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+            ->postJson('/api/v1/books', [
+                'title'            => 'Cien años de soledad',
+                'description'      => 'Novela del realismo mágico',
+                'ISBN'             => '9780060883287',
+                'total_copies'     => 5,
+                'available_copies' => 5,
+                'is_available'     => true,
+            ]);
 
-        // 3. Verificamos el resultado esperado de tu matriz
+        // Verificacion
         $response->assertStatus(201);
         $this->assertDatabaseHas('books', ['title' => 'Cien años de soledad']);
     }
 
-    /** @test */
-    public function un_estudiante_no_puede_crear_un_libro()
+    public function test_un_estudiante_no_puede_crear_un_libro()
     {
+        // Preparacion
         $estudiante = User::factory()->create();
         $estudiante->assignRole('estudiante');
 
+        // Ejecucion
         $response = $this->actingAs($estudiante, 'sanctum')
-                         ->postJson('/api/v1/books', [
-                             'title' => 'Libro Prohibido',
-                             'author' => 'Autor X',
-                             'ISBN' => '0987654321'
-                         ]);
+            ->postJson('/api/v1/books', [
+                'title'            => 'Libro Prohibido',
+                'description'      => 'Descripcion de prueba',
+                'ISBN'             => '9780060883288',
+                'total_copies'     => 3,
+                'available_copies' => 3,
+                'is_available'     => true,
+            ]);
 
-        // Verificamos que se le deniegue el acceso (403 Forbidden)
+        // Verificacion
         $response->assertStatus(403);
+    }
+
+    public function test_bibliotecario_puede_eliminar_permanentemente_un_libro()
+    {
+        // Preparacion
+        $bibliotecario = User::factory()->create();
+        $bibliotecario->assignRole('bibliotecario');
+        $book = Book::factory()->create();
+
+        // Ejecucion
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+            ->deleteJson("/api/v1/books/{$book->id}");
+
+        // Verificacion
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('books', ['id' => $book->id]);
     }
 }
