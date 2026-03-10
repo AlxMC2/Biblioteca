@@ -3,7 +3,7 @@
 use App\Models\User;
 use Laravel\Sanctum\PersonalAccessToken;
 
-it('logs in with correct credentials', function () {
+test('iniciar sesion con credenciales correctas', function () {
     $user = User::factory()->create([
         'password' => bcrypt('test123'),
     ]);
@@ -16,7 +16,7 @@ it('logs in with correct credentials', function () {
         ->assertJsonStructure(['access_token', 'token_type', 'user']);
 });
 
-it('fails login with incorrect password', function () {
+test('fallo en el inicio de sesion con contraseña incorrecta', function () {
     $user = User::factory()->create([
         'password' => bcrypt('test123'),
     ]);
@@ -28,7 +28,7 @@ it('fails login with incorrect password', function () {
         ->assertUnauthorized();
 });
 
-it('logs out and deletes all tokens', function () {
+test('el cierre de sesión elimina todos los tokens de acceso', function () {
     $user  = User::factory()->create();
     $token = $user->createToken('test')->plainTextToken;
 
@@ -39,7 +39,7 @@ it('logs out and deletes all tokens', function () {
     expect(PersonalAccessToken::count())->toBe(0);
 });
 
-it('revoked token cannot access profile', function () {
+test('el usuario no puede acceder con un token revocado', function () {
     $user  = User::factory()->create();
     $token = $user->createToken('test')->plainTextToken;
     $user->tokens()->delete();
@@ -49,12 +49,12 @@ it('revoked token cannot access profile', function () {
          ->assertUnauthorized();
 });
 
-it('fails logout without authentication', function () {
+test('fallo en el cierre de sesión si no hay ningún usuario autenticado', function () {
     $this->postJson('/api/v1/logout')
         ->assertUnauthorized();
 });
 
-it('returns profile data without exposing password', function () {
+test('retorno de los datos del perfil sin exponer la contraseña', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
