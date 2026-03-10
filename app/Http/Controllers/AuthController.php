@@ -8,25 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function register(Request $request) // ← MÉTODO COMPLETO NUEVO
-    {
-        $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        $user = User::create($validated);
-        $user->assignRole('estudiante');
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'user'         => $user->load('roles'),
-        ], 201);
-    }
+    
     public function login(Request $request)
     {
         if (Auth::attempt($request->only('email', 'password'))) {
@@ -42,7 +24,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Invalid credentials',
-        ], 422);
+        ], 401);
     }
 
     public function logout(Request $request)

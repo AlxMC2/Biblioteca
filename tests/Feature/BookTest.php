@@ -2,62 +2,97 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class BookTest extends TestCase
 {
-    use RefreshDatabase; // Esto limpia la base de datos después de cada test
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Creamos los roles necesarios para los tests
         Role::create(['name' => 'bibliotecario']);
+        Role::create(['name' => 'docente']);
         Role::create(['name' => 'estudiante']);
         Role::create(['name'=> 'docente']);
     }
 
-    /** @test */
-    public function un_bibliotecario_puede_crear_un_libro()
+    public function test_lista_libros_correctamente()
     {
-        // 1. Creamos el usuario y le asignamos el rol
-        $admin = User::factory()->create();
-        $admin->assignRole('bibliotecario');
 
-        // 2. Hacemos la petición como ese usuario
-        $response = $this->actingAs($admin, 'sanctum')
-                         ->postJson('/api/v1/books', [
-                             'title' => 'Cien años de soledad',
-                             'author' => 'Gabriel García Márquez',
-                             'ISBN' => '1234567890'
-                         ]);
+        Book::factory()->count(3)->create();
+        $user = User::factory()->create();
 
-        // 3. Verificamos el resultado esperado de tu matriz
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/books');
+
+
+        $response->assertStatus(200);
+
+    }
+
+    public function test_ver_detalle_de_libro()
+    {
+
+        $book = Book::factory()->create();
+        $user = User::factory()->create();
+
+
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/books/{$book->id}");
+
+
+        $response->assertStatus(200);
+        $response->assertJsonFragment(['title' => $book->title]);
+    }
+
+    public function test_bibliotecario_puede_crear_libro()
+    {
+
+        $bibliotecario = User::factory()->create();
+        $bibliotecario->assignRole('bibliotecario');
+
+
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+            ->postJson('/api/v1/books', [
+            'title' => 'Cien años de soledad',
+            'description' => 'Novela del realismo mágico',
+            'ISBN' => '9780060883287',
+            'total_copies' => 5,
+            'available_copies' => 5,
+            'is_available' => true,
+        ]);
+
+
         $response->assertStatus(201);
         $this->assertDatabaseHas('books', ['title' => 'Cien años de soledad']);
     }
 
-    /** @test */
-    public function un_estudiante_no_puede_crear_un_libro()
+    public function test_docente_no_puede_crear_libro()
     {
-        $estudiante = User::factory()->create();
-        $estudiante->assignRole('estudiante');
 
-        $response = $this->actingAs($estudiante, 'sanctum')
-                         ->postJson('/api/v1/books', [
-                             'title' => 'Libro Prohibido',
-                             'author' => 'Autor X',
-                             'ISBN' => '0987654321'
-                         ]);
+        $docente = User::factory()->create();
+        $docente->assignRole('docente');
 
-        // Verificamos que se le deniegue el acceso (403 Forbidden)
+
+        $response = $this->actingAs($docente, 'sanctum')
+            ->postJson('/api/v1/books', [
+            'title' => 'Libro Prohibido',
+            'description' => 'Descripcion de prueba',
+            'ISBN' => '9780060883288',
+            'total_copies' => 3,
+            'available_copies' => 3,
+            'is_available' => true,
+        ]);
+
+
         $response->assertStatus(403);
     }
 
+<<<<<<< HEAD
     /** @test */
     public function un_estudiante_no_puede_actualizar_un_libro()
     {
@@ -91,10 +126,16 @@ class BookTest extends TestCase
     /** @test */
     public function un_bibliotecario_puede_eliminar_un_libro()
     {
+=======
+    public function test_bibliotecario_puede_actualizar_libro()
+    {
+
+>>>>>>> 5db98ddd0732bd464d08c7ce8e2dee24ef7a89dd
         $bibliotecario = User::factory()->create();
         $bibliotecario->assignRole('bibliotecario');
         $book = Book::factory()->create();
 
+<<<<<<< HEAD
         $response = $this->actingAs($bibliotecario, 'sanctum')
                          ->deleteJson("/api/v1/books/{$book->id}");
 
@@ -127,3 +168,24 @@ class BookTest extends TestCase
         $response->assertStatus(403);
     }
 }
+=======
+
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+            ->putJson("/api/v1/books/{$book->id}", [
+            'title' => 'Título Actualizado',
+            'description' => 'Descripción actualizada',
+            'ISBN' => '9780060883211',
+            'total_copies' => 10,
+            'available_copies' => 10,
+            'is_available' => true,
+        ]);
+
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('books', [
+            'id' => $book->id,
+            'title' => 'Título Actualizado'
+        ]);
+    }
+}
+>>>>>>> 5db98ddd0732bd464d08c7ce8e2dee24ef7a89dd
