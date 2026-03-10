@@ -18,7 +18,6 @@ class BookTest extends TestCase
         Role::create(['name' => 'bibliotecario']);
         Role::create(['name' => 'docente']);
         Role::create(['name' => 'estudiante']);
-        Role::create(['name'=> 'docente']);
     }
 
     public function test_lista_libros_correctamente()
@@ -92,9 +91,7 @@ class BookTest extends TestCase
         $response->assertStatus(403);
     }
 
-<<<<<<< HEAD
-    /** @test */
-    public function un_estudiante_no_puede_actualizar_un_libro()
+    public function test_estudiante_no_puede_actualizar_un_libro()
     {
         $estudiante = User::factory()->create();
         $estudiante->assignRole('estudiante');
@@ -108,8 +105,7 @@ class BookTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
-    public function un_docente_no_puede_actualizar_un_libro()
+    public function test_docente_no_puede_actualizar_un_libro()
     {
         $docente = User::factory()->create();
         $docente->assignRole('docente');
@@ -123,52 +119,11 @@ class BookTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
-    public function un_bibliotecario_puede_eliminar_un_libro()
-    {
-=======
     public function test_bibliotecario_puede_actualizar_libro()
     {
-
->>>>>>> 5db98ddd0732bd464d08c7ce8e2dee24ef7a89dd
         $bibliotecario = User::factory()->create();
         $bibliotecario->assignRole('bibliotecario');
         $book = Book::factory()->create();
-
-<<<<<<< HEAD
-        $response = $this->actingAs($bibliotecario, 'sanctum')
-                         ->deleteJson("/api/v1/books/{$book->id}");
-
-        $response->assertStatus(200);
-    }
-
-    /** @test */
-    public function un_estudiante_no_puede_eliminar_un_libro()
-    {
-        $estudiante = User::factory()->create();
-        $estudiante->assignRole('estudiante');
-        $book = Book::factory()->create();
-
-        $response = $this->actingAs($estudiante, 'sanctum')
-                         ->deleteJson("/api/v1/books/{$book->id}");
-
-        $response->assertStatus(403);
-    }
-
-    /** @test */
-    public function un_docente_no_puede_eliminar_un_libro()
-    {
-        $docente = User::factory()->create();
-        $docente->assignRole('docente');
-        $book = Book::factory()->create();
-
-        $response = $this->actingAs($docente, 'sanctum')
-                         ->deleteJson("/api/v1/books/{$book->id}");
-
-        $response->assertStatus(403);
-    }
-}
-=======
 
         $response = $this->actingAs($bibliotecario, 'sanctum')
             ->putJson("/api/v1/books/{$book->id}", [
@@ -180,12 +135,60 @@ class BookTest extends TestCase
             'is_available' => true,
         ]);
 
-
         $response->assertStatus(200);
         $this->assertDatabaseHas('books', [
             'id' => $book->id,
             'title' => 'Título Actualizado'
         ]);
     }
+
+    public function test_bibliotecario_puede_eliminar_un_libro()
+    {
+        $bibliotecario = User::factory()->create();
+        $bibliotecario->assignRole('bibliotecario');
+        $book = Book::factory()->create();
+
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+                         ->deleteJson("/api/v1/books/{$book->id}");
+
+        $response->assertStatus(200);
+        $this->assertSoftDeleted('books', ['id' => $book->id]);
+    }
+
+    public function test_bibliotecario_puede_eliminar_permanentemente_un_libro()
+    {
+        $bibliotecario = User::factory()->create();
+        $bibliotecario->assignRole('bibliotecario');
+        $book = Book::factory()->create();
+
+        $response = $this->actingAs($bibliotecario, 'sanctum')
+                         ->deleteJson("/api/v1/books/{$book->id}/force");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('books', ['id' => $book->id]);
+    }
+
+    public function test_estudiante_no_puede_eliminar_un_libro()
+    {
+        $estudiante = User::factory()->create();
+        $estudiante->assignRole('estudiante');
+        $book = Book::factory()->create();
+
+        $response = $this->actingAs($estudiante, 'sanctum')
+                         ->deleteJson("/api/v1/books/{$book->id}");
+
+        $response->assertStatus(403);
+    }
+
+    public function test_docente_no_puede_eliminar_un_libro()
+    {
+        $docente = User::factory()->create();
+        $docente->assignRole('docente');
+        $book = Book::factory()->create();
+
+        $response = $this->actingAs($docente, 'sanctum')
+                         ->deleteJson("/api/v1/books/{$book->id}");
+
+        $response->assertStatus(403);
+    }
 }
->>>>>>> 5db98ddd0732bd464d08c7ce8e2dee24ef7a89dd

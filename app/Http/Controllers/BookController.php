@@ -68,4 +68,15 @@ class BookController extends Controller
             'message' => 'Libro eliminado exitosamente'
         ], 200);
     }
+
+    public function forceDestroy(Book $book)
+    {
+        $this->authorize('forceDelete', $book);
+
+        $book->forceDelete();
+
+        return response()->json([
+            'message' => 'Libro eliminado permanentemente'
+        ], 200);
+    }
 }
